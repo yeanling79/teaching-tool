@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>星际乘法大决战 - 四人点击PK版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #020617;
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            color: white;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: move-stars linear infinite;
+        }
+
+        @keyframes move-stars {
+            from { transform: translateY(-100vh); }
+            to { transform: translateY(100vh); }
+        }
+
+        .player-zone {
+            position: absolute;
+            width: 48%;
+            height: 48%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        /* 布局定位 */
+        .p1 { top: 0; left: 0; background: rgba(239, 68, 68, 0.05); border-radius: 0 0 40px 0; }
+        .p2 { top: 0; right: 0; background: rgba(59, 130, 246, 0.05); border-radius: 0 0 0 40px; }
+        .p3 { bottom: 0; left: 0; background: rgba(16, 185, 129, 0.05); border-radius: 0 40px 0 0; }
+        .p4 { bottom: 0; right: 0; background: rgba(245, 158, 11, 0.05); border-radius: 40px 0 0 0; }
+
+        .ship {
+            font-size: 2.5rem;
+            margin-bottom: 5px;
+            transition: transform 0.2s;
+        }
+
+        .option-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 10px;
+            text-align: center;
+            font-size: 1.25rem;
+            font-weight: bold;
+            transition: all 0.1s;
+            cursor: pointer;
+        }
+
+        .option-btn:active {
+            transform: scale(0.9);
+        }
+
+        .correct {
+            background: #22c55e !important;
+            border-color: #4ade80 !important;
+            animation: pulse 0.3s;
+        }
+
+        .wrong {
+            background: #ef4444 !important;
+            border-color: #f87171 !important;
+            animation: shake 0.3s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .center-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+            background: #1e1b4b;
+            border: 4px solid #6366f1;
+            border-radius: 50%;
+            width: 120px;
+            height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.6);
+        }
+
+        .laser {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            z-index: 50;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="stars-container"></div>
+
+    <div id="game-screen" class="w-screen h-screen relative">
+        
+        <!-- 玩家 1 -->
+        <div class="player-zone p1" id="zone-0">
+            <div class="flex justify-between w-full px-4 text-red-400 font-bold">
+                <span>玩家 1</span>
+                <span id="score-0">0</span>
+            </div>
+            <div class="ship" id="ship-0">🚀</div>
+            <div id="q-0" class="text-xl font-bold mb-2 text-white">? × ?</div>
+            <div class="grid grid-cols-2 gap-2 w-full max-w-[160px]" id="options-0"></div>
+        </div>
+
+        <!-- 玩家 2 -->
+        <div class="player-zone p2" id="zone-1">
+            <div class="flex justify-between w-full px-4 text-blue-400 font-bold">
+                <span>玩家 2</span>
+                <span id="score-1">0</span>
+            </div>
+            <div class="ship" id="ship-1">🛸</div>
+            <div id="q-1" class="text-xl font-bold mb-2 text-white">? × ?</div>
+            <div class="grid grid-cols-2 gap-2 w-full max-w-[160px]" id="options-1"></div>
+        </div>
+
+        <!-- 玩家 3 -->
+        <div class="player-zone p3" id="zone-2">
+            <div class="flex justify-between w-full px-4 text-green-400 font-bold">
+                <span>玩家 3</span>
+                <span id="score-2">0</span>
+            </div>
+            <div class="ship" id="ship-2">🛰️</div>
+            <div id="q-2" class="text-xl font-bold mb-2 text-white">? × ?</div>
+            <div class="grid grid-cols-2 gap-2 w-full max-w-[160px]" id="options-2"></div>
+        </div>
+
+        <!-- 玩家 4 -->
+        <div class="player-zone p4" id="zone-3">
+            <div class="flex justify-between w-full px-4 text-yellow-400 font-bold">
+                <span>玩家 4</span>
+                <span id="score-3">0</span>
+            </div>
+            <div class="ship" id="ship-3">👾</div>
+            <div id="q-4" class="text-xl font-bold mb-2 text-white">? × ?</div>
+            <div class="grid grid-cols-2 gap-2 w-full max-w-[160px]" id="options-3"></div>
+        </div>
+
+        <!-- 中心倒计时 -->
+        <div class="center-display">
+            <div class="text-xs text-indigo-300">倒计时</div>
+            <div id="timer-val" class="text-3xl font-black">60</div>
+        </div>
+    </div>
+
+    <!-- 结算 -->
+    <div id="modal" class="fixed inset-0 bg-black/90 flex items-center justify-center hidden z-[1000] p-4">
+        <div class="bg-slate-900 border-2 border-indigo-500 p-8 rounded-2xl text-center w-full max-w-sm">
+            <h2 class="text-3xl font-bold text-white mb-6">战斗报告</h2>
+            <div id="rankings" class="space-y-4 mb-8"></div>
+            <button onclick="resetGame()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold active:scale-95 transition">
+                重新开战
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const players = [
+            { id: 0, score: 0, color: '#ef4444', emoji: '🚀', currentAnswer: 0 },
+            { id: 1, score: 0, color: '#3b82f6', emoji: '🛸', currentAnswer: 0 },
+            { id: 2, score: 0, color: '#10b981', emoji: '🛰️', currentAnswer: 0 },
+            { id: 3, score: 0, color: '#f59e0b', emoji: '👾', currentAnswer: 0 }
+        ];
+
+        let timeLeft = 60;
+        let gameActive = false;
+        let timerInterval;
+
+        function createStars() {
+            const container = document.getElementById('stars-container');
+            for (let i = 0; i < 80; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + 'vw';
+                star.style.top = Math.random() * 100 + 'vh';
+                const size = Math.random() * 2 + 1 + 'px';
+                star.style.width = size;
+                star.style.height = size;
+                star.style.animationDuration = (Math.random() * 5 + 3) + 's';
+                container.appendChild(star);
+            }
+        }
+
+        function generateQuestionForPlayer(pIdx) {
+            const a = Math.floor(Math.random() * 8) + 2; 
+            const b = Math.floor(Math.random() * 8) + 2;
+            const ans = a * b;
+            players[pIdx].currentAnswer = ans;
+
+            const qEl = document.querySelector(`.p${pIdx+1} .text-xl`);
+            qEl.innerText = `${a} × ${b} = ?`;
+
+            // 干扰项
+            let options = [ans];
+            while(options.length < 4) {
+                let off = Math.floor(Math.random() * 10) - 5;
+                let wrong = ans + off;
+                if (wrong > 0 && wrong !== ans && !options.includes(wrong)) {
+                    options.push(wrong);
+                } else {
+                    let randomWrong = Math.floor(Math.random() * 80) + 2;
+                    if (!options.includes(randomWrong)) options.push(randomWrong);
+                }
+            }
+            options.sort(() => Math.random() - 0.5);
+
+            const grid = document.getElementById(`options-${pIdx}`);
+            grid.innerHTML = '';
+            options.forEach(opt => {
+                const btn = document.createElement('div');
+                btn.className = 'option-btn';
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(pIdx, opt, btn);
+                grid.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(pIdx, selected, btnEl) {
+            if (!gameActive) return;
+            
+            const player = players[pIdx];
+            if (selected === player.currentAnswer) {
+                player.score += 10;
+                btnEl.classList.add('correct');
+                document.getElementById(`score-${pIdx}`).innerText = player.score;
+                
+                // 特效
+                const ship = document.getElementById(`ship-${pIdx}`);
+                ship.style.transform = 'scale(1.3) rotate(10deg)';
+                setTimeout(() => ship.style.transform = '', 200);
+                shootLaser(pIdx);
+
+                // 换题
+                setTimeout(() => generateQuestionForPlayer(pIdx), 150);
+            } else {
+                player.score = Math.max(0, player.score - 5);
+                document.getElementById(`score-${pIdx}`).innerText = player.score;
+                btnEl.classList.add('wrong');
+                setTimeout(() => btnEl.classList.remove('wrong'), 300);
+            }
+        }
+
+        function shootLaser(pIdx) {
+            const zone = document.getElementById(`zone-${pIdx}`);
+            const rect = zone.getBoundingClientRect();
+            const laser = document.createElement('div');
+            laser.className = 'laser';
+            laser.style.background = players[pIdx].color;
+            laser.style.left = (rect.left + rect.width/2) + 'px';
+            laser.style.top = (rect.top + rect.height/2) + 'px';
+            document.body.appendChild(laser);
+
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+
+            laser.animate([
+                { transform: 'scale(1)', opacity: 1 },
+                { left: centerX + 'px', top: centerY + 'px', transform: 'scale(4)', opacity: 0 }
+            ], { duration: 400, easing: 'ease-in' }).onfinish = () => laser.remove();
+        }
+
+        function resetGame() {
+            players.forEach((p, idx) => {
+                p.score = 0;
+                document.getElementById(`score-${idx}`).innerText = '0';
+                generateQuestionForPlayer(idx);
+            });
+            timeLeft = 60;
+            gameActive = true;
+            document.getElementById('modal').classList.add('hidden');
+            
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer-val').innerText = timeLeft;
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(timerInterval);
+            const sorted = [...players].sort((a, b) => b.score - a.score);
+            
+            const list = document.getElementById('rankings');
+            list.innerHTML = '';
+            sorted.forEach((p, i) => {
+                const item = document.createElement('div');
+                item.className = `flex items-center justify-between p-3 rounded-lg ${i === 0 ? 'bg-indigo-900/50 border border-yellow-500' : 'bg-white/5'}`;
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">${p.emoji}</span>
+                        <span class="font-bold" style="color:${p.color}">玩家 ${p.id + 1}</span>
+                    </div>
+                    <span class="text-xl font-mono">${p.score}分</span>
+                `;
+                list.appendChild(item);
+            });
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        window.onload = () => {
+            createStars();
+            resetGame();
+        };
+    </script>
+</body>
+</html>
